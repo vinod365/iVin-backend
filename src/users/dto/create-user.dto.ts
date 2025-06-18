@@ -1,7 +1,12 @@
-import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 import { Role, Status } from '../entities/user.entity';
 
 export class CreateUserDto {
+
+  @IsOptional()
+  @IsString()
+  uid?: string;
+
   @IsOptional()
   @IsString()
   image?: string;
@@ -18,13 +23,10 @@ export class CreateUserDto {
   phone?: string;
 
   @IsOptional()
-  @IsEnum(Role)
+  @IsEnum(Role, { message: 'role must be either admin or dealer' })
   role?: Role;
 
   @IsOptional()
-  @IsEnum(Status)
+  @IsEnum(Status, { message: 'status must be either active or inactive' })
   status?: Status;
-
-  @IsString()
-  password: string;
 }

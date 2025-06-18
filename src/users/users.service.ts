@@ -1,59 +1,61 @@
-import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
-import { LoginUserDto } from './dto/login-user.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-import { FindUsersDto } from './dto/find-users.dto';
+
 import { User } from './entities/user.entity';
+import { ListUsersDto } from './dto/list-users.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) {}
+  ) { }
 
-  async signup(createUserDto: CreateUserDto): Promise<User> {
-    const existingUser = await this.userRepository.findOne({
-      where: { email: createUserDto.email },
-    });
+  async createUser(createUserDto: CreateUserDto): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { email: createUserDto.email } });
 
-    if (existingUser) {
-      throw new UnauthorizedException('Email already exists');
+    if (user) {
+      throw new ConflictException('user already exits with this email address');
     }
-
-    const user = this.userRepository.create(createUserDto);
-    return await this.userRepository.save(user);
+    const userCreated = this.userRepository.create(createUserDto);
+    return await this.userRepository.save(userCreated);
   }
 
-  async login(loginUserDto: LoginUserDto): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { email: loginUserDto.email },
-    });
+  async get(email: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { email }, relations: ["posts"] });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new NotFoundException('user does not exits');
     }
-
-    const isPasswordValid = await user.validatePassword(loginUserDto.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Update last login timestamp
     user.lastLoginAt = new Date();
     await this.userRepository.save(user);
-
     return user;
   }
 
-  async findAll(findUsersDto: FindUsersDto) {
-    const { search, page = 1, limit = 10 } = findUsersDto;
+  async listUsers(listUsersDto: ListUsersDto) {
+    const { search, page = 1, limit = 10 } = listUsersDto;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.userRepository.createQueryBuilder('user')
-      .select(['user.id', 'user.name', 'user.email', 'user.image', 'user.phone', 'user.role', 'user.status', 'user.createdAt', 'user.updatedAt']);
+      .select([
+        'user.id',
+        'user.uid',
+        'user.name',
+        'user.email',
+        'user.image',
+        'user.phone',
+        'user.role',
+        'user.status',
+        'user.lastLoginAt',
+        'user.createdAt',
+        'user.updatedAt',
+      ])
+      .skip(skip)
+      .take(limit);
+
 
     if (search) {
       queryBuilder.where(
@@ -78,13 +80,12 @@ export class UsersService {
     };
   }
 
-  async updateProfile(id: string, updateProfileDto: UpdateProfileDto): Promise<User> {
+  async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
-    Object.assign(user, updateProfileDto);
+    Object.assign(user, updateUserDto);
     return await this.userRepository.save(user);
   }
 

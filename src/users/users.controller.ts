@@ -1,35 +1,34 @@
 import { Controller, Post, Body, Patch, Param, Get, Delete, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { LoginUserDto } from './dto/login-user.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-import { FindUsersDto } from './dto/find-users.dto';
+import { ListUsersDto } from './dto/list-users.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
-  @Post('signup')
-  signup(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.signup(createUserDto);
+  @Post('')
+  createUser(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.createUser(createUserDto);
   }
 
-  @Post('login')
-  login(@Body() loginUserDto: LoginUserDto) {
-    return this.usersService.login(loginUserDto);
+  @Get('')
+  listUsers(@Query() listUsersDto: ListUsersDto) {
+    return this.usersService.listUsers(listUsersDto);
   }
 
-  @Get()
-  findAll(@Query() findUsersDto: FindUsersDto) {
-    return this.usersService.findAll(findUsersDto);
+  @Get(':email')
+  getUser(@Param('email') email: string) {
+    return this.usersService.get(email);
   }
 
-  @Patch('profile/:id')
+  @Patch(':id')
   updateProfile(
     @Param('id') id: string,
-    @Body() updateProfileDto: UpdateProfileDto,
+    @Body() updateUserDto: UpdateUserDto,
   ) {
-    return this.usersService.updateProfile(id, updateProfileDto);
+    return this.usersService.updateUser(id, updateUserDto);
   }
 
   @Delete(':id')
